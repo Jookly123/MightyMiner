@@ -55,6 +55,7 @@ repositories {
     maven("https://repo.spongepowered.org/maven/")
     maven("https://pkgs.dev.azure.com/djtheredstoner/DevAuth/_packaging/public/maven/v1")
     maven("https://repo.polyfrost.cc/releases")
+    mavenCentral()
 }
 
 val shadowImpl: Configuration by configurations.creating {
@@ -79,6 +80,8 @@ dependencies {
     
     runtimeOnly("me.djtheredstoner:DevAuth-forge-legacy:1.2.0")
     shadowImpl("it.unimi.dsi:fastutil:8.2.1")
+
+    shadowImpl("com.google.genai:google-genai:1.5.0")
 }
 
 // Tasks:
@@ -131,9 +134,30 @@ tasks.shadowJar {
         }
     }
 
-    // If you want to include other dependencies and shadow them, you can relocate them in here
-    fun relocate(name: String) = relocate(name, "$baseGroup.deps.$name")
-    relocate("it.unimi.dsi.fastutil") // Relocate FastUtil to avoid conflicts
+    // Relocate Google Generative AI and its extensive transitive dependencies
+    fun relocateGoogleDeps(pkg: String) = relocate(pkg, "$baseGroup.deps.google.$pkg")
+
+    // Core Google GenAI and related API packages
+    relocateGoogleDeps("com.google.genai")
+    relocateGoogleDeps("com.google.api")       // Core Google API client classes
+    relocateGoogleDeps("com.google.auth")      // Google Authentication libraries
+    relocateGoogleDeps("com.google.cloud")     // Core Google Cloud utilities
+    relocateGoogleDeps("com.google.longrunning") // Common protobufs for long running operations
+    relocateGoogleDeps("com.google.protobuf")  // Protocol Buffers - VERY common conflict
+    relocateGoogleDeps("com.google.rpc")       // gRPC status codes
+
+    // Network stack dependencies
+    relocateGoogleDeps("io.grpc")             // gRPC - used for API communication
+    relocateGoogleDeps("okhttp3")             // HTTP client
+    relocateGoogleDeps("okio")                // Part of OkHttp
+
+    // Utility and other common dependencies that might conflict or are newer versions
+    // Often pulled in by gRPC or other deps; can conflict.
+    relocateGoogleDeps("javax.annotation")
+    // JSR-310 (java.time) backport for older Java versions, sometimes pulled by modern libraries
+    relocateGoogleDeps("org.threeten.bp")
+
+    relocate("it.unimi.dsi.fastutil", "$baseGroup.deps.fastutil")
 //    relocate("com.google.code.gson") // Relocate FastUtil to avoid conflicts
 }
 tasks.jar {
