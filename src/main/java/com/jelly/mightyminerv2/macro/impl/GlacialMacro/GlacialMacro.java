@@ -10,6 +10,7 @@ import com.jelly.mightyminerv2.macro.AbstractMacro;
 import com.jelly.mightyminerv2.macro.impl.GlacialMacro.states.*;
 import com.jelly.mightyminerv2.util.PlayerUtil;
 import com.jelly.mightyminerv2.util.TablistUtil;
+import com.jelly.mightyminerv2.util.helper.AudioManager;
 import com.jelly.mightyminerv2.util.helper.MineableBlock;
 import com.jelly.mightyminerv2.util.helper.route.RouteWaypoint;
 import lombok.Getter;
@@ -17,6 +18,8 @@ import lombok.Setter;
 import net.minecraftforge.fml.common.gameevent.TickEvent;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * GlacialMacro is responsible for managing the Glacial Macro functionality,
@@ -30,6 +33,8 @@ public class GlacialMacro extends AbstractMacro {
     @Setter
     @Getter
     private GlacialMacroState currentState;
+
+    private static final Pattern SENDER_NAME_PATTERN = Pattern.compile("^.*?(?<senderName>[a-zA-Z0-9_]+)§?f?:");
 
     // Shared data for states
     @Getter
@@ -124,10 +129,27 @@ public class GlacialMacro extends AbstractMacro {
 
     @Override
     public void onChat(String message) {
-        if (isEnabled() && message.contains("Commission Completed!") && !message.contains(":")) {
+        String senderName = null;
+        Matcher matcher = SENDER_NAME_PATTERN.matcher(message);
+        if (matcher.find()) {
+            senderName = matcher.group("senderName");
+        }
+
+        if (isEnabled() && message.contains("Commission Completed!") && !message.contains(":") && senderName == null) {
             log("Commission completion detected by chat message.");
             if (currentState instanceof MiningState || currentState instanceof PathfindingState) {
                 transitionTo(new com.jelly.mightyminerv2.macro.impl.GlacialMacro.states.ClaimingCommissionState());
+            }
+        }
+
+        if (isEnabled() && message.contains("Glacite Mineshaft portal!") && senderName == null) {
+            log("Glacite Mineshaft portal detected by chat message.");
+            AudioManager.getInstance().playSound();
+            if (MightyMinerConfig.glacialMineshaftStop) {
+                warn("Glacial Mineshaft portal detected, stopping macro");
+                GlacialMacro.getInstance().disable();
+            } else {
+                warn("Glacial Mineshaft portal detected");
             }
         }
     }

@@ -336,6 +336,15 @@ public class MightyMinerConfig extends Config {
     )
     public static int coldThreshold = 50;
 
+    @DualOption(
+            name = "Glacite Mineshaft Portal Behavior", category = GLACIAL_COMMISSION, subcategory = "General",
+            description = "On a Glacite Mineshaft Portal Spawn, set the macro to notify or pause",
+            left = "Notify",
+            right = "Pause",
+            size = 1
+    )
+    public static boolean glacialMineshaftStop = false;
+
     @Switch(
             name = "Reset Stats When Disabled",
             category = GLACIAL_COMMISSION,
